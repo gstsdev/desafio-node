@@ -1,0 +1,48 @@
+version: '3'
+
+services:
+  app:
+    build:
+      context: ./node
+    container_name: desafio-node-app
+    image: gstsdev/desafio-node-app:latest
+    tty: true
+    command: sh -c 'wait-for desafio-node-db:3306 -t 40 -- node index.js'
+    volumes:
+      - ./node:/usr/src/app
+    networks:
+      - node-network
+    depends_on:
+      - db
+  
+  nginx:
+    build:
+      context: ./nginx
+    container_name: desafio-node-nginx
+    image: gstsdev/desafio-node-nginx:latest
+    ports:
+      - 8080:80
+    networks:
+      - node-network
+    depends_on:
+      - app
+
+  db:
+    build:
+      context: ./db
+    image: gstsdev/desafio-node-mysql:5.7
+    container_name: desafio-node-db
+    command: --innodb-use-native-aio=0
+    restart: always
+    tty: true
+    environment:
+      - MYSQL_DATABASE=nodedb
+      - MYSQL_ROOT_PASSWORD=root
+    volumes:
+      - ./db/mysql:/var/lib/mysql
+    networks:
+      - node-network
+
+networks:
+  node-network:
+    driver: bridge
